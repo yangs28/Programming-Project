@@ -35,6 +35,7 @@ def validate(data):
         and "transitions" in data):
         all_data_present = True
     else:
+        print(f"[ERROR] DFA is missing one or more required data fields!")
         return False
 
 
@@ -54,6 +55,7 @@ def validate(data):
     and transitions_type_correct
 )
     if not data_correct:
+        print("[ERROR] DFA contains missing data!")
         return False
 
     #for loop to check that the start state is within the list of state. 
@@ -66,6 +68,7 @@ def validate(data):
 
     #if not, return false
     if not valid_start_state:
+        print(f"[ERROR] The DFA start state '{data['start_state']}' is not in the list of states!")
         return False
 
     #reuses the logic for the check for the start state.
@@ -80,6 +83,7 @@ def validate(data):
             break
 
     if not valid_accept_state:
+        print(f"[ERROR] The DFA accept state(s) '{accept_state}' is not in the list of states!")
         return False
 
     valid_transitions = True
@@ -89,17 +93,20 @@ def validate(data):
 
         #if the source state is not within the list of states, we set as false
         if state not in data["states"]:
+            print(f"[ERROR] The source state '{state}' does not exist!")
             valid_transitions = False
             break
 
         for symbol, destination in transitions.items():
             #if a state references a non-existent symbol during a transition, we also set as false
             if symbol not in data["alphabet"]:
+                print(f"[ERROR] The symbol '{symbol}' is not included in the alphabet!")
                 valid_transitions = False
                 break
 
             #if a state transitions into a non-existent state, we set as false
             if destination not in data["states"]:
+                print(f"[ERROR] The transition from state '{state}' on symbol '{symbol}' leads to an invalid state!")
                 valid_transitions = False
                 break
 
@@ -115,6 +122,7 @@ def validate(data):
 
         #checks to ensure the source state actually exists
         if state not in data["transitions"]:
+            print(f"[ERROR] The state '{state}' has no transitions!")
             valid_transitions = False
             break
 
@@ -122,6 +130,7 @@ def validate(data):
         for symbol in data["alphabet"]:
 
             if symbol not in data["transitions"][state]:
+                print(f"[ERROR] The state '{state}' is missing a transition for symbol '{symbol}'!")
                 valid_transitions = False
                 break
 
@@ -141,6 +150,11 @@ def validate(data):
 
     return False
 
+
+
+
+#MAIN =================================================================================
+
 # Reads the input DFA
 try:
     #hardcoded name for now
@@ -149,10 +163,10 @@ try:
 
 # if the DFA is invalid or does not exist, print an exception
 except json.JSONDecodeError:
-    print("[ERROR] Invalid JSON formatting.")
+    print(f"[ERROR] Invalid JSON formatting.")
 
 except FileNotFoundError:
-    print("[ERROR] Input file not found.")
+    print(f"[ERROR] Input file not found.")
 
 #put an else here for "graceful error handling" (code freaks out if we dont do this)
 else:
