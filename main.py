@@ -1,8 +1,6 @@
-
+#import stuff
 import json
 import copy
-
-
 
 #validation function
 
@@ -10,6 +8,8 @@ import copy
 def validate(data):
 
     #below conditional booleans check to ensure that each part of the DFA is correct and labeled properly
+    #set to False by default. If the check passes, the boolean is set to True.
+    #def validate returns True only if all checks passes. Otherwise, return False and output an error message
 
     #all data present checks to ensure all data fields are present and not missing
     all_data_present = False
@@ -27,6 +27,7 @@ def validate(data):
     valid_transitions = False
 
 
+    #makes sure the json has all necessary data, such as states, alphabet, etc. If not, return false
     if ("states" in data
         and "alphabet" in data
         and "start_state" in data
@@ -57,7 +58,7 @@ def validate(data):
         print("[ERROR] DFA contains missing data!")
         return False
 
-    #for loop to check that the start state is within the list of state. 
+    #for loop to check that the start state is within the list of states. 
     for state in data["states"]:
 
         #if it is, break the loop and set as true
@@ -70,7 +71,8 @@ def validate(data):
         print(f"[ERROR] The DFA start state '{data['start_state']}' is not in the list of states!")
         return False
 
-    #reuses the logic for the check for the start state.
+    #This checks to ensure the accept state is also within the state of states. Reuses the logic for the check for the start state.
+    #Sets valid_accept_state as True by default, then checks to see if it's invalid. If it is invalid, set it as False.
     valid_accept_state = True
 
     #checks to make sure there are no invalid states (ie. accept states outside the list of states)
@@ -81,10 +83,12 @@ def validate(data):
             valid_accept_state = False
             break
 
+    #Return error
     if not valid_accept_state:
         print(f"[ERROR] The DFA accept state(s) '{accept_state}' is not in the list of states!")
         return False
 
+    #Checks to ensure all transitions are valid. This boolean is set as True by default like with valid_accept_state
     valid_transitions = True
 
     #checks to ensure all transitions for each state is valid (ie. a state does not transition into a non-existent state)
@@ -111,7 +115,7 @@ def validate(data):
 
         if not valid_transitions:
             break
-    #exit and return false if transitions fail. Otherwise, set valid_transitions as true
+    #exit and return false if transitions fail.
     if not valid_transitions:
         return False
 
@@ -150,13 +154,11 @@ def validate(data):
     return False
 
 
-
-
 #MAIN =================================================================================
 
 # Reads the input DFA
 try:
-    #hardcoded name for now
+    #hardcoded name for now. It checks that there is file named "input_dfa.json" within the working directory and loads as data
     with open("input_dfa.json", "r") as file:
         data = json.load(file)
 
@@ -167,7 +169,7 @@ except json.JSONDecodeError:
 except FileNotFoundError:
     print(f"[ERROR] Input file not found.")
 
-#put an else here for "graceful error handling" (code freaks out if we dont do this)
+#Only run the DFA complement logic if the file was found and loaded correctly
 else:
 
 # LOGIC
@@ -186,11 +188,11 @@ else:
         #copy the original dfa (by this point the dfa has a valid structure so we only need to change one of the fields)
         complement_dfa = copy.deepcopy(data)
 
-        #stores all unique states not in the original accepting states (ie. its complement)
+        #initializes empty array to store all unique states not in the original accepting states (ie. its complement)
         complement_accept_states = []
 
         for state in data["states"]:
-            #adds any states outside the original accepting states into the list of complement states 
+            #adds any states outside the original accepting states into the list of complement states (Q-F)
             if state not in data["accept_states"]:
                 complement_accept_states.append(state)
 
