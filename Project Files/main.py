@@ -1,0 +1,213 @@
+#import stuff
+import json
+import copy
+
+#validation function
+
+# Validation function
+def validate(data):
+
+    #below conditional booleans check to ensure that each part of the DFA is correct and labeled properly
+    #set to False by default. If the check passes, the boolean is set to True.
+    #def validate returns True only if all checks passes. Otherwise, return False and output an error message
+
+    #all data present checks to ensure all data fields are present and not missing
+    all_data_present = False
+
+    #this checks to ensure that the data within the data fields are correct
+    data_correct = False
+
+    #this checks to make sure the start state is within the list of states
+    valid_start_state = False
+
+    #this checks to ensure that the accept states are within the list of states
+    valid_accept_state = False
+
+    #this checks to make sure all transitions are correct (ie. no transitions into non-existent states, etc.)
+    valid_transitions = False
+
+
+    #makes sure the json has all necessary data, such as states, alphabet, etc. If not, return false
+    if ("states" in data
+        and "alphabet" in data
+        and "start_state" in data
+        and "accept_states" in data
+        and "transitions" in data):
+        all_data_present = True
+    else:
+        print(f"[ERROR] DFA is missing one or more required data fields!")
+        return False
+
+
+    #checks to ensure all data values are of the correct type
+    states_type_correct = isinstance(data["states"], list)
+    alphabet_type_correct = isinstance(data["alphabet"], list)
+    start_type_correct = isinstance(data["start_state"], str)
+    accept_type_correct = isinstance(data["accept_states"], list)
+    transitions_type_correct = isinstance(data["transitions"], dict)
+
+    #checks to ensure data is in the correct formats
+    data_correct = (
+    states_type_correct
+    and alphabet_type_correct
+    and start_type_correct
+    and accept_type_correct
+    and transitions_type_correct
+)
+    if not data_correct:
+        print("[ERROR] DFA contains missing data!")
+        return False
+
+    #for loop to check that the start state is within the list of states. 
+    for state in data["states"]:
+
+        #if it is, break the loop and set as true
+        if state == data["start_state"]:
+            valid_start_state = True
+            break
+
+    #if not, return false
+    if not valid_start_state:
+        print(f"[ERROR] The DFA start state '{data['start_state']}' is not in the list of states!")
+        return False
+
+    #This checks to ensure the accept state is also within the state of states. Reuses the logic for the check for the start state.
+    #Sets valid_accept_state as True by default, then checks to see if it's invalid. If it is invalid, set it as False.
+    valid_accept_state = True
+
+    #checks to make sure there are no invalid states (ie. accept states outside the list of states)
+    for accept_state in data["accept_states"]:
+
+        #if a state is invalid, set as False. If not, we continue on
+        if accept_state not in data["states"]:
+            valid_accept_state = False
+            break
+
+    #Return error
+    if not valid_accept_state:
+        print(f"[ERROR] The DFA accept state(s) '{accept_state}' is not in the list of states!")
+        return False
+
+    #Checks to ensure all transitions are valid. This boolean is set as True by default like with valid_accept_state
+    valid_transitions = True
+
+    #checks to ensure all transitions for each state is valid (ie. a state does not transition into a non-existent state)
+    for state, transitions in data["transitions"].items():
+
+        #if the source state is not within the list of states, we set as false
+        if state not in data["states"]:
+            print(f"[ERROR] The source state '{state}' does not exist!")
+            valid_transitions = False
+            break
+
+        for symbol, destination in transitions.items():
+            #if a state references a non-existent symbol during a transition, we also set as false
+            if symbol not in data["alphabet"]:
+                print(f"[ERROR] The symbol '{symbol}' is not included in the alphabet!")
+                valid_transitions = False
+                break
+
+            #if a state transitions into a non-existent state, we set as false
+            if destination not in data["states"]:
+                print(f"[ERROR] The transition from state '{state}' on symbol '{symbol}' leads to an invalid state!")
+                valid_transitions = False
+                break
+
+        if not valid_transitions:
+            break
+    #exit and return false if transitions fail.
+    if not valid_transitions:
+        return False
+
+    
+    # Checks that every state has a transition for every symbol within the alphabet
+    for state in data["states"]:
+
+        #checks to ensure the source state actually exists
+        if state not in data["transitions"]:
+            print(f"[ERROR] The state '{state}' has no transitions!")
+            valid_transitions = False
+            break
+
+        #makes sure all alphabet symbols have a corresponding transition
+        for symbol in data["alphabet"]:
+
+            if symbol not in data["transitions"][state]:
+                print(f"[ERROR] The state '{state}' is missing a transition for symbol '{symbol}'!")
+                valid_transitions = False
+                break
+
+        if not valid_transitions:
+            break
+
+    if not valid_transitions:
+        return False
+
+    #if all checks pass, return True. Otherwalse, false
+    if (all_data_present
+    and data_correct
+    and valid_start_state
+    and valid_accept_state
+    and valid_transitions):
+        return True
+
+    return False
+
+
+#MAIN =================================================================================
+
+# Reads the input DFA
+try:
+    #hardcoded name for now. It checks that there is file named "input_dfa.json" within the working directory and loads as data
+    with open("input_dfa.json", "r") as file:
+        data = json.load(file)
+
+# if the DFA is invalid or does not exist, print an exception
+except json.JSONDecodeError:
+    print(f"[ERROR] Invalid JSON formatting.")
+
+except FileNotFoundError:
+    print(f"[ERROR] Input file not found.")
+
+#Only run the DFA complement logic if the file was found and loaded correctly
+else:
+
+# LOGIC
+
+    # Checks for valid DFA
+    is_valid = validate(data)
+
+
+    #if not valid, print an error
+    if not is_valid:
+        print("[ERROR] Invalid DFA.")
+
+    #if the DFA is valid, perform the logic and print the complement
+    else:
+
+        #copy the original dfa (by this point the dfa has a valid structure so we only need to change one of the fields)
+        complement_dfa = copy.deepcopy(data)
+
+        #initializes empty array to store all unique states not in the original accepting states (ie. its complement)
+        complement_accept_states = []
+
+        for state in data["states"]:
+            #adds any states outside the original accepting states into the list of complement states (Q-F)
+            if state not in data["accept_states"]:
+                complement_accept_states.append(state)
+
+        #replace the original accepting states with its complement
+        complement_dfa["accept_states"] = complement_accept_states
+
+        # Prints a formatted message showing the original vs. changed DFA
+        print("Original DFA:")
+        print(json.dumps(data, indent=4))
+        print()
+
+        print("Complement DFA:")
+        print(json.dumps(complement_dfa, indent=4))
+        print()
+
+        #saves the output dfa within the same directory
+        with open("output_dfa.json", "w") as file:
+            json.dump(complement_dfa, file, indent=4)
